@@ -231,7 +231,7 @@ running_var = bn_param.get("running_var", np.zeros(D, dtype=x.dtype))
 - 放大器 γ要怎么调（dgamma）？
 - 高低调整器 β 要怎么调（dbeta）
 
-![image-20251011201220959](C:\Users\3084\AppData\Roaming\Typora\typora-user-images\image-20251011201220959.png)
+![image-20251011201220959](F:\items\cs231\assets\image-20251011201220959.png)
 
 前向 均值 方差  归一   **缩放和平移** 
 $$
@@ -247,11 +247,11 @@ $$
 $$
 依据dout修改  gamma beta x
 
-![image-20251011205233902](C:\Users\3084\AppData\Roaming\Typora\typora-user-images\image-20251011205233902.png)
+![image-20251011205233902](F:\items\cs231\assets\image-20251011205233902.png)
 
 损失函数 L 依赖于输出 yi，所以 ∂L/∂β需要通过 yi回推
 
-![image-20251011210843421](C:\Users\3084\AppData\Roaming\Typora\typora-user-images\image-20251011210843421.png)
+![image-20251011210843421](F:\items\cs231\assets\image-20251011210843421.png)
 
 L为差值      
 
@@ -263,9 +263,9 @@ L为差值
 
 求偏导（里面的）   再用链式法则串起来
 
-![image-20251011213420256](C:\Users\3084\AppData\Roaming\Typora\typora-user-images\image-20251011213420256.png)
+![image-20251011213420256](F:\items\cs231\assets\image-20251011213420256.png)
 
-![image-20251011222234913](C:\Users\3084\AppData\Roaming\Typora\typora-user-images\image-20251011222234913.png)
+![image-20251011222234913](F:\items\cs231\assets\image-20251011222234913.png)
 
 **对谁求偏导，就只动谁，其他量当常数**。
 
@@ -275,9 +275,9 @@ L为差值
 
 **计算图思维**：每个节点写局部导数，最后链式相乘、相加。
 
-![image-20251011224512938](C:\Users\3084\AppData\Roaming\Typora\typora-user-images\image-20251011224512938.png)
+![image-20251011224512938](F:\items\cs231\assets\image-20251011224512938.png)
 
-![image-20251011224535482](C:\Users\3084\AppData\Roaming\Typora\typora-user-images\image-20251011224535482.png)
+![image-20251011224535482](F:\items\cs231\assets\image-20251011224535482.png)
 
 隐函数求导口诀   画关系图，找出每一个因子影响到的底层
 
