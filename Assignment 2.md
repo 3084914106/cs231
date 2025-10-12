@@ -189,6 +189,6 @@ def batchnorm_backward(dout, cache):
     return dx, dgamma, dbeta
 ```
 
-![image-20251012145326437](Assignment 2.assets/image-20251012145326437.png)
+![image-20251012145923369](./Assignment 2.assets/image-20251012145923369.png)
 
-![image-20251012145347328](Assignment 2.assets/image-20251012145347328.png)
+![image-20251012145939014](./Assignment 2.assets/image-20251012145939014.png)
