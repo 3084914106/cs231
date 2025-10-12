@@ -44,3 +44,151 @@ tensor([[ 0.1000, -1.0000,  0.5000,  1.8000],
 但如果是：60、90、75、85、70 虽然平均值可能差不多，但波动很大 → 方差大。
 ```
 
+
+
+![]()
+
+## 3. Batch Normalization 中的求导示例
+
+Batch Normalization 的前向传播：
+
+python
+
+```
+# 前向传播
+μ = (1/m) * Σ xᵢ                    # 均值
+σ² = (1/m) * Σ (xᵢ - μ)²           # 方差
+x̂ᵢ = (xᵢ - μ) / √(σ² + ε)          # 归一化
+yᵢ = γ * x̂ᵢ + β                    # 缩放和偏移
+```
+
+
+
+### 反向传播求导过程
+
+**已知**：上游梯度 ∂L/∂yᵢ
+
+**目标**：计算 ∂L/∂xᵢ, ∂L/∂γ, ∂L/∂β
+
+#### 1. 计算 ∂L/∂β
+
+text
+
+```
+∂L/∂β = Σᵢ (∂L/∂yᵢ) * (∂yᵢ/∂β)
+      = Σᵢ ∂L/∂yᵢ * 1
+      = Σᵢ ∂L/∂yᵢ
+```
+
+
+
+#### 2. 计算 ∂L/∂γ
+
+text
+
+```
+∂L/∂γ = Σᵢ (∂L/∂yᵢ) * (∂yᵢ/∂γ)
+      = Σᵢ ∂L/∂yᵢ * x̂ᵢ
+```
+
+
+
+#### 3. 计算 ∂L/∂x̂ᵢ
+
+text
+
+```
+∂L/∂x̂ᵢ = (∂L/∂yᵢ) * (∂yᵢ/∂x̂ᵢ)
+       = ∂L/∂yᵢ * γ
+```
+
+
+
+#### 4. 计算 ∂L/∂σ²
+
+text
+
+```
+∂L/∂σ² = Σᵢ (∂L/∂x̂ᵢ) * (∂x̂ᵢ/∂σ²)
+       = Σᵢ ∂L/∂x̂ᵢ * (xᵢ - μ) * (-1/2) * (σ² + ε)^(-3/2)
+       = -1/2 * (σ² + ε)^(-3/2) * Σᵢ ∂L/∂x̂ᵢ * (xᵢ - μ)
+```
+
+
+
+#### 5. 计算 ∂L/∂μ
+
+text
+
+```
+∂L/∂μ = Σᵢ (∂L/∂x̂ᵢ) * (∂x̂ᵢ/∂μ) + (∂L/∂σ²) * (∂σ²/∂μ)
+
+∂x̂ᵢ/∂μ = -1/√(σ² + ε)
+∂σ²/∂μ = -2/m * Σᵢ (xᵢ - μ)
+
+∂L/∂μ = Σᵢ ∂L/∂x̂ᵢ * (-1/√(σ² + ε)) 
+       + ∂L/∂σ² * (-2/m * Σᵢ (xᵢ - μ))
+```
+
+
+
+#### 6. 计算 ∂L/∂xᵢ
+
+text
+
+```
+∂L/∂xᵢ = (∂L/∂x̂ᵢ) * (∂x̂ᵢ/∂xᵢ) + (∂L/∂σ²) * (∂σ²/∂xᵢ) + (∂L/∂μ) * (∂μ/∂xᵢ)
+
+∂x̂ᵢ/∂xᵢ = 1/√(σ² + ε)
+∂σ²/∂xᵢ = 2/m * (xᵢ - μ)
+∂μ/∂xᵢ = 1/m
+
+∂L/∂xᵢ = ∂L/∂x̂ᵢ * (1/√(σ² + ε))
+        + ∂L/∂σ² * (2/m * (xᵢ - μ))
+        + ∂L/∂μ * (1/m)
+```
+
+
+
+## 4. 实际代码实现
+
+python
+
+```
+import numpy as np
+
+def batchnorm_backward(dout, cache):
+    """
+    dout: 上游梯度 ∂L/∂y, shape (N, D)
+    cache: 前向传播时保存的中间变量
+    """
+    x, x_norm, mean, var, gamma, beta, eps = cache
+    N, D = dout.shape
+    
+    # 1. 计算 ∂L/∂β 和 ∂L/∂γ
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * x_norm, axis=0)
+    
+    # 2. 计算 ∂L/∂x̂
+    dx_norm = dout * gamma
+    
+    # 3. 计算 ∂L/∂σ²
+    dvar = np.sum(dx_norm * (x - mean) * -0.5 * (var + eps)**(-1.5), axis=0)
+    
+    # 4. 计算 ∂L/∂μ
+    dmean1 = np.sum(dx_norm * -1 / np.sqrt(var + eps), axis=0)
+    dmean2 = dvar * np.sum(-2 * (x - mean), axis=0) / N
+    dmean = dmean1 + dmean2
+    
+    # 5. 计算 ∂L/∂x
+    dx1 = dx_norm / np.sqrt(var + eps)
+    dx2 = dvar * 2 * (x - mean) / N
+    dx3 = dmean / N
+    dx = dx1 + dx2 + dx3
+    
+    return dx, dgamma, dbeta
+```
+
+![image-20251012144319415](F:\items\cs231\assets\image-20251012144319415.png)
+
+![image-20251012144348331](F:\items\cs231\assets\image-20251012144348331.png)
