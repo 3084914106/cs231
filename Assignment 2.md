@@ -48,7 +48,7 @@ tensor([[ 0.1000, -1.0000,  0.5000,  1.8000],
 
 ![]()
 
-## 3. Batch Normalization 中的求导示例
+##  Batch Normalization 中的求导示例
 
 Batch Normalization 的前向传播：
 
@@ -70,7 +70,7 @@ yᵢ = γ * x̂ᵢ + β                    # 缩放和偏移
 
 **目标**：计算 ∂L/∂xᵢ, ∂L/∂γ, ∂L/∂β
 
-#### 1. 计算 ∂L/∂β
+1. 计算 ∂L/∂β
 
 text
 
@@ -82,7 +82,7 @@ text
 
 
 
-#### 2. 计算 ∂L/∂γ
+2. 计算 ∂L/∂γ
 
 text
 
@@ -93,7 +93,7 @@ text
 
 
 
-#### 3. 计算 ∂L/∂x̂ᵢ
+3. 计算 ∂L/∂x̂ᵢ
 
 text
 
@@ -104,7 +104,7 @@ text
 
 
 
-#### 4. 计算 ∂L/∂σ²
+4. 计算 ∂L/∂σ²
 
 text
 
@@ -116,7 +116,7 @@ text
 
 
 
-#### 5. 计算 ∂L/∂μ
+5. 计算 ∂L/∂μ
 
 text
 
@@ -132,7 +132,7 @@ text
 
 
 
-#### 6. 计算 ∂L/∂xᵢ
+6. 计算 ∂L/∂xᵢ
 
 text
 
@@ -150,7 +150,7 @@ text
 
 
 
-## 4. 实际代码实现
+4. 实际代码实现
 
 python
 
@@ -192,3 +192,115 @@ def batchnorm_backward(dout, cache):
 ![](./Assignment%202.assets/image-20251012150330777.png)
 
 ![](./Assignment%202.assets/image-20251012150344755.png)
+
+**问![image-20251014163117939](./Assignment%202.assets/image-20251014163117939.png)
+
+第一项 n * dout *gamma  第二项 
+
+![image-20251014163908101](./Assignment%202.assets/image-20251014163908101.png)
+
+第二项   np.sum(dout *gamma ,axis= o)
+
+第三项    x_hat * np.sum(dx_hat * x_hat, axis=0)
+
+![image-20251014164331428](./Assignment%202.assets/image-20251014164331428.png)
+
+![image-20251014165039400](./Assignment%202.assets/image-20251014165039400.png)
+
+running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+
+​    running_var = momentum * running_var + (1 - momentum) * sample_var
+
+什么意思
+
+***变量传输有问题     不要钻牛角尖数学推导过程   理解抽象过程以及伪代码     把公式翻译正确代码。***
+
+```python
+
+    sample_mean = bn_param.get("running_mean", np.zeros(D, dtype=x.dtype))
+    sample_var = bn_param.get("running_var", np.zeros(D, dtype=x.dtype))
+     格式化
+    
+
+running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+        running_var = momentum * running_var + (1 - momentum) * sample_var
+    公式
+    bn_param["running_mean"] = running_mean
+    bn_param["running_var"] = running_var
+       存储
+```
+
+
+
+## Fully Connected Networks with Batch Normalization
+
+{affine - [batch/layer norm] - relu - [dropout]} x (L - 1) - affine - softmax
+
+第一步：计算    
+
+第二步：让它们大小差不多（均值0，方差1）[batch/layer norm]*可选*
+
+**第三步：放大缩小魔法（ReLU）**
+
+- 有一个“能量开关”，只让正数的积木通过，负数的积木变成0。
+
+**第四步（可选）：随机休息（dropout）***  *可选*
+
+- 有时候，魔法师会让一些积木“休息”（随机置0）
+
+**重复：L−1L-1L−1 次**
+
+- 除了最后一关，其他关卡都会重复这个“计算-整理-放大-休息”的流程
+
+**最后一步：猜答案（affine - softmax）**
+
+- 最后一关再算一次（affine），然后用“选答案魔法”（softmax）把结果变成概率，
+
+作业代码变量与架构  
+
+每一层的权重矩阵 `W` 的形状都是 `(输入维度, 输出维度)`
+
+第 1 步：理清网络结构和维度
+
+第 2 步：构建一个完整的维度列表 📏
+
+
+
+为了在代码中轻松地处理这个维度传递，一个非常聪明的技巧是先把所有层的维度放在一个列表里。
+
+这个列表应该包含：**输入维度 +所有隐藏层维度 + 输出维度**。
+
+根据 `input_dim`, `hidden_dims`, `num_classes` 这三个变量，如何创建一个像 `[D, H1, H2, C]` 这样的完整维度列表
+
+我们的目标是把输入维度、所有隐藏层的维度和最终的输出（分类数）维度整合到一个列表里，方便后续的循环操作
+
+将输入维度、隐藏层维度列表、输出维度拼接成一个完整的列表
+
+```
+dims = [input_dim] + hidden_dims + [num_classes]
+```
+
+
+
+**题词更新：（不要直接输出代码答案，而是描述代码输入，输出，以及逻辑与框架，分步让我学会，提示需要用到的函数，使用简单解释功能）**
+
+```python
+dims = [input_dim] + hidden_dims + [num_classes]
+        for i in range(self.num_layers):
+          input_dim_of_layer = dims[i]
+          output_dim_of_layer = dims[i+1]
+          key_W = f'W{i+1}'
+          self.params[key_W] = np.random.randn(input_dim_of_layer, output_dim_of_layer) * weight_scale
+
+          key_b = f'b{i+1}'
+          self.params[key_b] = np.zeros(output_dim_of_layer)
+          if self.normalization == 'batchnorm' and i < self.num_layers - 1:
+            gamma = f'gamma{i+1}'
+            self.params[gamma] = np.ones(output_dim_of_layer,)
+
+            beta = f'beta{i+1}'
+            self.params[beta] = np.zeros(output_dim_of_layer,)
+```
+
+loss
+
